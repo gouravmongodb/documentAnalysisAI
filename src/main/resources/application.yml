@@ -14,9 +14,13 @@ app:
   voyage:
     api-key: ${VOYAGE_API_KEY}
     model: voyage-3-large
+    rerank-model: rerank-2.5-lite
   openai:
     api-key: ${OPENAI_API_KEY}
     model: gpt-5-mini
   retrieval:
     top-k: 5
     num-candidates: 100
+    hybrid-pool-size: 12
+    rerank-top-k: 6
+    rrf-k: 60

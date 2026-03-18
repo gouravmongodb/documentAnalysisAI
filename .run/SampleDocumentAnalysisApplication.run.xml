@@ -1,0 +1,16 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="DocumentAnalysisApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
+    <envs>
+      <env name="MONGO_USER" value="USERNAME"/>
+      <env name="MONGO_PASS" value="PASSWORD"/>
+      <env name="MONGO_HOST" value="MONGODB_URI"/>
+      <env name="VOYAGE_API_KEY" value="pa-xxxxxxxx" />
+      <env name="OPENAI_API_KEY" value="sk-xxxxxxxxx" />
+    </envs>
+    <module name="documentAnalysisAI" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="com.gourav.docanalysis.DocumentAnalysisApplication" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

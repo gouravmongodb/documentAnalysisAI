@@ -5,6 +5,7 @@ import com.gourav.docanalysis.model.AskResponse;
 import com.gourav.docanalysis.model.Citation;
 import com.gourav.docanalysis.model.ContextSource;
 import com.gourav.docanalysis.model.IngestRequest;
+import com.gourav.docanalysis.model.RetrievalCandidate;
 import com.gourav.docanalysis.service.AtlasVectorSearchService;
 import com.gourav.docanalysis.service.CitationService;
 import com.gourav.docanalysis.service.ConversationService;
@@ -12,8 +13,9 @@ import com.gourav.docanalysis.service.IngestionService;
 import com.gourav.docanalysis.service.OpenAiService;
 import com.gourav.docanalysis.service.PdfIngestionService;
 import com.gourav.docanalysis.service.VoyageAiService;
+import com.gourav.docanalysis.service.HybridRetrievalServiceSimpleWeighted;
+import com.gourav.docanalysis.service.VoyageRerankService;
 import jakarta.validation.Valid;
-import org.bson.Document;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -22,6 +24,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api")
+@CrossOrigin(origins = "http://localhost:3000")
 public class AnalysisController {
 
     private final IngestionService ingestionService;
@@ -31,6 +34,8 @@ public class AnalysisController {
     private final OpenAiService openAiService;
     private final ConversationService conversationService;
     private final CitationService citationService;
+    private final HybridRetrievalServiceSimpleWeighted hybridRetrievalService;
+    private final VoyageRerankService voyageRerankService;
 
     public AnalysisController(IngestionService ingestionService,
                               PdfIngestionService pdfIngestionService,
@@ -38,7 +43,9 @@ public class AnalysisController {
                               AtlasVectorSearchService atlasVectorSearchService,
                               OpenAiService openAiService,
                               ConversationService conversationService,
-                              CitationService citationService) {
+                              CitationService citationService,
+                              HybridRetrievalServiceSimpleWeighted hybridRetrievalService,
+                              VoyageRerankService voyageRerankService) {
         this.ingestionService = ingestionService;
         this.pdfIngestionService = pdfIngestionService;
         this.voyageAiService = voyageAiService;
@@ -46,6 +53,8 @@ public class AnalysisController {
         this.openAiService = openAiService;
         this.conversationService = conversationService;
         this.citationService = citationService;
+        this.hybridRetrievalService = hybridRetrievalService;
+        this.voyageRerankService = voyageRerankService;
     }
 
     @PostMapping("/ingest")
@@ -64,20 +73,35 @@ public class AnalysisController {
     @PostMapping("/ask")
     public ResponseEntity<AskResponse> ask(@Valid @RequestBody AskRequest request) {
         List<Double> queryVector = voyageAiService.embedText(request.getQuestion());
-        List<Document> results = atlasVectorSearchService.search(queryVector, request.getDocumentId());
 
-        List<String> chunkIds = results.stream()
-                .map(d -> d.getObjectId("_id") != null ? d.getObjectId("_id").toHexString() : "")
-                .toList();
+        List<RetrievalCandidate> hybridCandidates = hybridRetrievalService.retrieve(
+                queryVector,
+                request.getQuestion(),
+                request.getDocumentId()
+        );
 
-        List<ContextSource> rawSources = results.stream()
-                .map(d -> new ContextSource(
-                        d.getString("chunkText"),
-                        d.getString("fileName"),
-                        d.getString("documentId"),
-                        d.getInteger("pageNumber"),
-                        d.getInteger("chunkIndex"),
-                        d.get("score") instanceof Number ? ((Number) d.get("score")).doubleValue() : null
+        int hybridPoolSize = Math.min(12, hybridCandidates.size());
+        List<RetrievalCandidate> pooledCandidates = hybridCandidates.subList(0, hybridPoolSize);
+
+        List<RetrievalCandidate> rerankedCandidates = voyageRerankService.rerank(
+                request.getQuestion(),
+                pooledCandidates,
+                Math.min(6, pooledCandidates.size())
+        );
+
+        List<ContextSource> rawSources = rerankedCandidates.stream()
+                .map(c -> new ContextSource(
+                        c.getChunkText(),
+                        c.getFileName(),
+                        c.getDocumentId(),
+                        c.getPageNumber(),
+                        c.getChunkIndex(),
+                        c.getRerankScore() != null ? c.getRerankScore() : c.getFusedScore(),
+                        c.getRetrievalSource(),
+                        c.getVectorRank(),
+                        c.getKeywordRank(),
+                        c.getFusedScore(),
+                        c.getRerankScore()
                 ))
                 .toList();
 
@@ -93,6 +117,10 @@ public class AnalysisController {
                 history,
                 citationSummary
         );
+
+        List<String> chunkIds = rerankedCandidates.stream()
+                .map(RetrievalCandidate::getChunkId)
+                .toList();
 
         conversationService.save(
                 request.getSessionId(),

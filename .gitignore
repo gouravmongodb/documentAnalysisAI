@@ -12,7 +12,7 @@ target/
 *.iws
 *.iml
 *.ipr
-.run
+.run/DocumentAnalysisApplication.run.xml
 sample
 
 ### Eclipse ###

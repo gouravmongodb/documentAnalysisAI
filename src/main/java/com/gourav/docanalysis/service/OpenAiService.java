@@ -26,6 +26,28 @@ public class OpenAiService {
         this.model = model;
     }
 
+    private String extractAnswer(JsonNode root) {
+        try {
+            JsonNode output = root.path("output");
+
+            for (JsonNode item : output) {
+                if ("message".equals(item.path("type").asText())) {
+                    JsonNode contentArray = item.path("content");
+
+                    for (JsonNode content : contentArray) {
+                        if ("output_text".equals(content.path("type").asText())) {
+                            return content.path("text").asText();
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return "No valid answer found.";
+    }
+
     public String answerQuestion(String question,
                                  List<ContextSource> sources,
                                  List<String> history,
@@ -52,11 +74,8 @@ public class OpenAiService {
 
             JsonNode root = objectMapper.readTree(response);
 
-            if (root.has("output_text")) {
-                return root.get("output_text").asText();
-            }
+            return extractAnswer(root);
 
-            return root.toPrettyString();
         } catch (Exception e) {
             throw new RuntimeException("Failed to call OpenAI", e);
         }

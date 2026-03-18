@@ -5,16 +5,22 @@ import lombok.Data;
 
 @Data
 @AllArgsConstructor
-public class ContextSource {
+public class RetrievalCandidate {
+    private String chunkId;
     private String chunkText;
     private String fileName;
     private String documentId;
     private Integer pageNumber;
     private Integer chunkIndex;
-    private Double score;
-    private String retrievalSource;
+
+    private Double vectorScore;
+    private Double keywordScore;
+
     private Integer vectorRank;
     private Integer keywordRank;
+
     private Double fusedScore;
     private Double rerankScore;
+
+    private String retrievalSource; // vector, keyword, hybrid
 }

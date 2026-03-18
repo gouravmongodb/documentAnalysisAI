@@ -10,6 +10,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+/*
+Since the score in the mapped ContextSource is now based on:
+rerankScore first
+fallback to fusedScore
+the dedup will naturally keep the best final chunk per page.
+ */
+
 @Service
 public class CitationService {
 
