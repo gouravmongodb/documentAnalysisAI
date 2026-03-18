@@ -1,0 +1,22 @@
+server:
+  port: 8080
+
+spring:
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+
+app:
+  mongodb:
+    uri: mongodb+srv://${MONGO_USER}:${MONGO_PASS}@${MONGO_HOST}/document_ai_demo?retryWrites=true&w=majority
+    database: document_ai_demo
+  voyage:
+    api-key: ${VOYAGE_API_KEY}
+    model: voyage-3-large
+  openai:
+    api-key: ${OPENAI_API_KEY}
+    model: gpt-5-mini
+  retrieval:
+    top-k: 5
+    num-candidates: 100
