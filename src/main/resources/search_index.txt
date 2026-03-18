@@ -1,0 +1,24 @@
+ namespace: document_ai_demo.document_chunks
+
+ search index name: text_index
+
+index definition:
+{
+  "mappings": {
+    "dynamic": false,
+    "fields": {
+      "chunkText": {
+        "type": "string"
+      },
+      "documentId": {
+        "type": "string"
+      },
+      "fileName": {
+        "type": "string"
+      },
+      "pageNumber": {
+        "type": "number"
+      }
+    }
+  }
+}

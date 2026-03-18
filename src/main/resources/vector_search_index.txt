@@ -1,0 +1,23 @@
+ namespace: document_ai_demo.document_chunks
+
+ search index name: vector_index
+
+index definition:
+{
+  "fields": [
+    {
+      "numDimensions": 1024,
+      "path": "embedding",
+      "similarity": "cosine",
+      "type": "vector"
+    },
+    {
+      "path": "documentId",
+      "type": "filter"
+    },
+    {
+      "path": "fileName",
+      "type": "filter"
+    }
+  ]
+}
